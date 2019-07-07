@@ -55,6 +55,6 @@ Thus a call
 
 would be translated as
 
-    wslwrap.exe ls -l /mnt/d/wslwrap/trunk
+    ls -l /mnt/d/wslwrap/trunk
     
 The utility cannot and doesn't recognize relative paths (and would pass them as is, not trying to replace windows to unix slashes).
