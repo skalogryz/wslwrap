@@ -43,4 +43,18 @@ is exactly the same as
 
     wslwrap.exe ls -l
 
-     
+### Absolute path replacement     
+
+If any of the parameter contains a sequence of %CHAR%:\ (i.e. C:\, D:\, etc...), such parameter would be treated as an absolute path and would be replaced accordingly.
+
+The replacement is based on WSL logic, where all Windows paths are mounted to /mnt/%char% directory.
+
+Thus a call
+
+     wslwrap.exe ls -l D:\wslwrap\trunk
+
+would be translated as
+
+    wslwrap.exe ls -l /mnt/d/wslwrap/trunk
+    
+The utility cannot and doesn't recognize relative paths (and would pass them as is, not trying to replace windows to unix slashes).
