@@ -6,11 +6,16 @@ There are two purposse of the utility are:
 - to demonstrate an ability to execute a WSL (linux) application by Win32 Application
 - wrap around (linux) FPC to let Win32 Lazarus compile Linux targets using WSL.
 
-## how to compile
+## Prerequisites
+You need to have WSL installed and configured with a default distro.
+
+WSL1 or WSL2 should not matter, but the utility was tested with WSL2 only.
+
+## How to compile
 Two ways, either compile using FPC - wslwrap.lpr 
 or using lazarus IDE, by openning wslwrap.lpi
 
-## how to use
+## How to use
 The utility passes the all command-line parameters to the WSL.exe utility (with -e switch enabled. bypassing bash)
 For example
      
