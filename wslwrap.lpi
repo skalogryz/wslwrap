@@ -42,11 +42,6 @@
       <IncludeFiles Value="$(ProjOutDir)"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
-    <Other>
-      <Verbosity>
-        <ShowAll Value="True"/>
-      </Verbosity>
-    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

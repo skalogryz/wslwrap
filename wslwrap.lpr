@@ -96,21 +96,51 @@ begin
   end;
 end;
 
-function GetCommandFile(const wrpfile: string): string;
+type
+  TWSLWrap = record
+    cmd : string;
+    linkres : Boolean;
+  end;
+
+function GetCommandFile(const wrpfile: string; out info: TWSLWrap): Boolean;
 var
   st : TStringList;
 begin
+  info := Default(TWSLWrap);
   try
     st := TStringList.create;
     try
       st.LoadFromFile(wrpfile);
-      if st.Count>0 then Result := st[0]
-      else Result := '';
+      info.cmd := st.Values['exe'];
+      info.linkres := st.Values['linkres']<>'';
+      Result := true;
+      //if st.Count>0 then Result := st[0]
+      //else Result := '';
     finally
       st.Free;
     end;
   except
-    Result := '';
+    Result := false;
+  end;
+end;
+
+// this is a hack to make cross-compile bin utils work
+procedure UpdateLinkRes(const fn: string);
+var
+  st : TStringList;
+  i  : integer;
+begin
+  try
+    st := TStringList.Create;
+    try
+      st.LoadFromFile(fn);
+      for i:=0 to st.Count-1 do
+        st[i]:=WinPathToUnixPath(st[i]);
+      st.SaveToFile(fn);
+    finally
+      st.Free;
+    end;
+  except
   end;
 end;
 
@@ -120,6 +150,7 @@ var
   s   : string;
   cmd : string;
   i   : integer;
+  info : TWSLWrap;
 begin
   exename := ExtractfileName(ParamStr(0));
   s:=ChangeFileExt(exename,'');
@@ -131,13 +162,16 @@ begin
 
   wrpname := ChangeFileExt(ParamStr(0),'.wrp');
   if FileExists(wrpname) then begin
-    s := GetCommandFile(wrpname);
-    if s<>'' then cmd := s;
+    GetCommandFile(wrpname, info);
+    if info.cmd<>'' then cmd := info.cmd;
+    if info.linkres then begin
+      UpdateLinkRes( 'link.res') ;
+    end;
   end;
 
   if (ParamCount<1) and (cmd = '') then Exit;
 
-  for i:=1 to ParamCount do writeln(i,': ', Paramstr(i));
+  //for i:=1 to ParamCount do writeln(i,': ', Paramstr(i));
 
   RunWSLWrap(cmd);
 end.
