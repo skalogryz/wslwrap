@@ -96,19 +96,48 @@ begin
   end;
 end;
 
+function GetCommandFile(const wrpfile: string): string;
 var
+  st : TStringList;
+begin
+  try
+    st := TStringList.create;
+    try
+      st.LoadFromFile(wrpfile);
+      if st.Count>0 then Result := st[0]
+      else Result := '';
+    finally
+      st.Free;
+    end;
+  except
+    Result := '';
+  end;
+end;
+
+var
+  exename : string;
+  wrpname : string;
   s   : string;
   cmd : string;
   i   : integer;
 begin
-  s:=ChangeFileExt(ExtracTfileName(ParamStr(0)),'');
+  exename := ExtractfileName(ParamStr(0));
+  s:=ChangeFileExt(exename,'');
   i := Pos('_',s);
   if (i>0) then begin
     cmd := Copy(s, i+1, length(s));
   end else
     cmd :='';
 
+  wrpname := ChangeFileExt(ParamStr(0),'.wrp');
+  if FileExists(wrpname) then begin
+    s := GetCommandFile(wrpname);
+    if s<>'' then cmd := s;
+  end;
+
   if (ParamCount<1) and (cmd = '') then Exit;
+
+  for i:=1 to ParamCount do writeln(i,': ', Paramstr(i));
 
   RunWSLWrap(cmd);
 end.
