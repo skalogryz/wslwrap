@@ -76,6 +76,6 @@ linkres= (if specified) would update the existing link.res file (by working dire
     
 Creating your own ls.exe. Compile wslwrap.exe, rename it to ls.exe. Create ls.wrp file and add one line to it
 
-   exe=ls
+    exe=ls
    
 That's it. Now you can run your ls.exe (with any additional parameters desired)   
