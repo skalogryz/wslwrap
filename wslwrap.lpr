@@ -9,6 +9,9 @@ uses
   {$ENDIF}{$ENDIF}
   SysUtils, Classes, process;
 
+// converts any entries of Hello#10World
+// into
+// Hello#10#13World
 procedure WriteNixToWin(var dst: Text; const s: string);
 var
   i : integer;
@@ -27,6 +30,8 @@ begin
     write(dst, copy(s, j,length(s)-j+1));
 end;
 
+// Replaces any entraces of X:\path\path as /mnt/x/path/path
+// Does nothing with relative paths ./path/path
 function WinPathToUnixPath(const s: string): string;
 var
   i: integer;
@@ -42,14 +47,74 @@ begin
     Result := s;
 end;
 
+// Returns the number of bytes available for the immediate (non-blocking) read from a handle
+// A handle is assumed to be a standard input handle
+function NumBytesAvailable(ahandle: THANDLE): integer;
+const
+  MaxDisk = 65536;
+var
+  lw, mx: DWORD;
+  sz: Uint64;
+  ofs: UInt64;
+  cinp : array of TINPUTRECORD;
+  rd: DWORD;
+  i: integer;
+begin
+  case GetFileType(AHandle) of
+    FILE_TYPE_PIPE:
+      if not PeekNamedPipe(aHandle, nil, 0, nil, @Result, nil) then
+        Result := 0;
+
+    FILE_TYPE_CHAR:
+    begin
+      if not GetNumberOfConsoleInputEvents(aHandle, @Result) then begin
+        Result := 0;
+        Exit;
+      end;
+      if (Result = 0) then Exit;
+
+      SetLength(cinp, Result);
+      PeekConsoleInput(aHandle, @cinp[0], length(cinp), @rd);
+      Result := 0;
+      for i := 0 to rd-1 do
+        if cinp[i].EventType = KEY_EVENT then
+        begin
+          writeln(Ord(cinp[i].Event.KeyEvent.AsciiChar));
+          inc(Result, 1); // reading ANSI (1-byte) :(
+        end;
+      if Result = 0 then FlushConsoleInputBuffer(aHandle);
+    end;
+
+    FILE_TYPE_DISK:
+    begin
+      mx := 0;
+      lw := GetFileSize(ahandle, @mx);
+      sz := mx shl 32 or lw;
+
+      lw := SetFilePointer(aHandle, 0, @mx, FILE_CURRENT);
+      ofs := mx shl 32 or lw;
+      sz := sz - ofs;
+
+      if sz > MaxDisk then Result := MaxDisk
+      else Result := Integer(sz);
+    end;
+
+  else
+    Result := 0;
+  end;
+end;
+
 procedure RunWSLWrap(const dstExecName: string = '');
 var
   p : TProcess;
   i : integer;
   s : string;
   sz : integer;
+  inp : THandleStream;
 begin
+
   //AllocConsole;
+  inp := THandleStream.Create(StdInputHandle);
   p := TProcess.Create(nil);
   try
     p.Executable := 'wsl';
@@ -68,7 +133,14 @@ begin
     begin
       if p.Running and (p.Output.NumBytesAvailable = 0) or (p.Stderr.NumBytesAvailable = 0) then
       begin
-        s:=#0{#10#13};
+        sz := NumBytesAvailable(inp.Handle);
+        if sz>0 then begin
+          SetLength(s, sz);
+          sz := inp.Read(s[1], sz);
+          SetLength(s, sz);
+        end else
+          s:=#0{#10#13};
+
         p.Input.Write(s, length(s));
         Sleep(1);
       end;
@@ -93,6 +165,7 @@ begin
 
   finally
     p.Free;
+    inp.Free;
   end;
 end;
 
@@ -164,9 +237,7 @@ begin
   if FileExists(wrpname) then begin
     GetCommandFile(wrpname, info);
     if info.cmd<>'' then cmd := info.cmd;
-    if info.linkres then begin
-      UpdateLinkRes( 'link.res') ;
-    end;
+    if info.linkres then UpdateLinkRes( 'link.res') ;
   end;
 
   if (ParamCount<1) and (cmd = '') then Exit;
