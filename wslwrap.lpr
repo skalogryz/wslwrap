@@ -11,7 +11,7 @@ uses
 
 // converts any entries of Hello#10World
 // into
-// Hello#10#13World
+// Hello#13#10World
 procedure WriteNixToWin(var dst: Text; const s: string);
 var
   i : integer;
@@ -19,9 +19,9 @@ var
 begin
   j:=1;
   for i:=1 to length(s) do
-    if (s[i]=#10) and (i<=length(s)) and (s[i+1]<>#13) then begin
-      write(dst, copy(s, j, i-j+1));
-      write(#13);
+    if (s[i]=#10) and (i<=length(s)) and (i>1) and (s[i-1]<>#13) then begin
+      write(dst, copy(s, j, i-j));
+      write(#13#10);
       j:=i+1;
     end;
   if j=1 then
@@ -78,10 +78,7 @@ begin
       Result := 0;
       for i := 0 to rd-1 do
         if cinp[i].EventType = KEY_EVENT then
-        begin
-          writeln(Ord(cinp[i].Event.KeyEvent.AsciiChar));
           inc(Result, 1); // reading ANSI (1-byte) :(
-        end;
       if Result = 0 then FlushConsoleInputBuffer(aHandle);
     end;
 
