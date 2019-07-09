@@ -58,3 +58,19 @@ would be translated as
     ls -l /mnt/d/wslwrap/trunk
     
 The utility cannot and doesn't recognize relative paths (and would pass them as is, not trying to replace windows to unix slashes).
+
+### use of .wrp file
+
+The file is used to specify the desired executable name (instead of using file renaming name), as well as being able to override link.res file paths (used as a hack for cross-compile binaries)
+The .wrp file name must match the executable name, except for extention. (and executable name can be anything desired).
+
+For example, if the executable name is x86_64-linux-ld.exe, then the .wrp file should be x86_64-linux-ld.wrp. The file must be located at the same directory as the executable.
+
+The file format is a simple key=value files. Example:
+
+    exe=ld
+    linkres=1
+
+where exe= specifies the executable to be called in WSL.
+linkres= (if specified) would update the existing link.res file (by working directory) replacing all windows paths with WSL unix paths.
+    
