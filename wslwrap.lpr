@@ -30,7 +30,7 @@ begin
     write(dst, copy(s, j,length(s)-j+1));
 end;
 
-// Replaces any entraces of X:\path\path as /mnt/x/path/path
+// Replaces any entries of X:\path\path as /mnt/x/path/path
 // Does nothing with relative paths ./path/path
 function WinPathToUnixPath(const s: string): string;
 var
@@ -43,8 +43,16 @@ begin
     p:=LowerCase(s[i-1])+Copy(s, i+1, length(s));
     p:=StringReplace(p, '\','/', [rfReplaceAll]);
     Result := Result+'/mnt/'+p;
-  end else
+  end else begin
+    i:=Pos(':/',s);
+    // path is set as "D:/path/path/file"
+    if (i>0) and (s[i-1] in ['a'..'z','A'..'Z']) then begin
+      Result := Copy(s, 1, i-2);
+      p:=LowerCase(s[i-1])+Copy(s, i+1, length(s));
+      Result := Result+'/mnt/'+p;
+    end else
     Result := s;
+  end;
 end;
 
 // Returns the number of bytes available for the immediate (non-blocking) read from a handle
@@ -103,7 +111,7 @@ begin
   end;
 end;
 
-procedure RunWSLWrap(const dstExecName: string = '');
+procedure RunWSLWrap(const dstExecName: string = ''; WriteDummy: Boolean = true; WinToNixInput: Boolean = false);
 var
   p : TProcess;
   i : integer;
@@ -159,9 +167,13 @@ begin
           SetLength(s, sz);
           sz := inp.Read(s[1], sz);
           SetLength(s, sz);
-        end else
+          if WinToNixInput then
+            s:=WinPathToUnixPath(s);
+          p.Input.Write(s[1], length(s));
+        end else if WriteDummy then begin
           s:=#0;
-        p.Input.Write(s[1], length(s));
+          p.Input.Write(s[1], 0);
+        end;
       end;
 
       outa := p.Output.NumBytesAvailable;
@@ -176,8 +188,10 @@ end;
 
 type
   TWSLWrap = record
-    cmd : string;
+    cmd     : string;
     linkres : Boolean;
+    inp_dummy   : Boolean;
+    inp_wintonix : Boolean;
   end;
 
 function GetCommandFile(const wrpfile: string; out info: TWSLWrap): Boolean;
@@ -191,6 +205,8 @@ begin
       st.LoadFromFile(wrpfile);
       info.cmd := st.Values['exe'];
       info.linkres := st.Values['linkres']<>'';
+      info.inp_dummy := st.Values['inp.dummy']<>'0';
+      info.inp_wintonix := st.Values['inp.wintonix']='1';
       Result := true;
       //if st.Count>0 then Result := st[0]
       //else Result := '';
@@ -249,6 +265,6 @@ begin
 
   //for i:=1 to ParamCount do writeln(i,': ', Paramstr(i));
 
-  RunWSLWrap(cmd);
+  RunWSLWrap(cmd, info.inp_dummy, info.inp_wintonix);
 end.
 
