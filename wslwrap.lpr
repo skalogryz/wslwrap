@@ -77,7 +77,7 @@ begin
       PeekConsoleInput(aHandle, @cinp[0], length(cinp), @rd);
       Result := 0;
       for i := 0 to rd-1 do
-        if cinp[i].EventType = KEY_EVENT then
+        if (cinp[i].EventType = KEY_EVENT) and cinp[i].Event.KeyEvent.bKeyDown then
           inc(Result, 1); // reading ANSI (1-byte) :(
       if Result = 0 then FlushConsoleInputBuffer(aHandle);
     end;
