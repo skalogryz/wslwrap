@@ -67,6 +67,8 @@ begin
 
     FILE_TYPE_CHAR:
     begin
+      Result := 0;
+      Exit;
       if not GetNumberOfConsoleInputEvents(aHandle, @Result) then begin
         Result := 0;
         Exit;
@@ -108,6 +110,8 @@ var
   s : string;
   sz : integer;
   inp : THandleStream;
+  outa: integer;
+  erra: integer;
 begin
 
   //AllocConsole;
@@ -126,24 +130,22 @@ begin
 
     p.Execute;
 
-    while (p.Running) or (p.Output.NumBytesAvailable > 0) or (p.Stderr.NumBytesAvailable > 0) do
+    outa := p.Output.NumBytesAvailable;
+    erra := p.Stderr.NumBytesAvailable;
+    while (p.Running) or (outa > 0) or (erra > 0) do
     begin
-      if p.Running and (p.Output.NumBytesAvailable = 0) or (p.Stderr.NumBytesAvailable = 0) then
+      if p.Running and (outa = 0) or (erra = 0) then
       begin
         sz := NumBytesAvailable(inp.Handle);
         if sz>0 then begin
           SetLength(s, sz);
           sz := inp.Read(s[1], sz);
           SetLength(s, sz);
-        end else
-          s:=#0{#10#13};
-
-        p.Input.Write(s, length(s));
-        Sleep(1);
+          p.Input.Write(s, length(s));
+        end;
       end;
-      //writeln(p.Running,' ',p.Output.NumBytesAvailable,' ',p.Stderr.NumBytesAvailable,' ',p.ExitCode,' ',p.ExitStatus);
 
-      sz := p.Output.NumBytesAvailable;
+      sz := outa;
       if sz>0 then begin
         SetLength(s, sz);
         sz := p.Output.Read(s[1], sz);
@@ -151,14 +153,16 @@ begin
         WriteNixToWin(StdOut, s);
       end;
 
-      sz := p.Stderr.NumBytesAvailable;
+      sz := erra;
       if sz>0 then begin
         SetLength(s, sz);
         sz := p.Stderr.Read(s[1], sz);
         if sz < length(s) then SetLength(s, sz);
         WriteNixToWin(StdErr, s);
       end;
-   end;
+      outa := p.Output.NumBytesAvailable;
+      erra := p.Stderr.NumBytesAvailable;
+    end;
 
   finally
     p.Free;
