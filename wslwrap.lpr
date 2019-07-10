@@ -112,6 +112,7 @@ var
   inp : THandleStream;
   outa: integer;
   erra: integer;
+  anyoutput: Boolean;
 begin
 
   //AllocConsole;
@@ -134,23 +135,13 @@ begin
     erra := p.Stderr.NumBytesAvailable;
     while (p.Running) or (outa > 0) or (erra > 0) do
     begin
-      if p.Running and (outa = 0) or (erra = 0) then
-      begin
-        sz := NumBytesAvailable(inp.Handle);
-        if sz>0 then begin
-          SetLength(s, sz);
-          sz := inp.Read(s[1], sz);
-          SetLength(s, sz);
-          p.Input.Write(s, length(s));
-        end;
-      end;
-
       sz := outa;
       if sz>0 then begin
         SetLength(s, sz);
         sz := p.Output.Read(s[1], sz);
         if sz < length(s) then SetLength(s, sz);
         WriteNixToWin(StdOut, s);
+        anyoutput := true;
       end;
 
       sz := erra;
@@ -159,7 +150,20 @@ begin
         sz := p.Stderr.Read(s[1], sz);
         if sz < length(s) then SetLength(s, sz);
         WriteNixToWin(StdErr, s);
+        anyoutput := true;
       end;
+
+      if anyoutput then begin
+        sz := NumBytesAvailable(inp.Handle);
+        if sz>0 then begin
+          SetLength(s, sz);
+          sz := inp.Read(s[1], sz);
+          SetLength(s, sz);
+        end else
+          s:=#0;
+        p.Input.Write(s[1], length(s));
+      end;
+
       outa := p.Output.NumBytesAvailable;
       erra := p.Stderr.NumBytesAvailable;
     end;
