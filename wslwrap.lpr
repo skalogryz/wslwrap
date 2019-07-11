@@ -30,7 +30,12 @@ begin
     write(dst, copy(s, j,length(s)-j+1));
 end;
 
-// Replaces any entries of X:\path\path as /mnt/x/path/path
+function WinLFtoNixLF(const s: string): string;
+begin
+  Result := StringReplace(s, #13#10, #10, [rfReplaceAll]);
+end;
+
+// Replaces the first entry of X:\path\path as /mnt/x/path/path
 // Does nothing with relative paths ./path/path
 function WinPathToUnixPath(const s: string): string;
 var
@@ -111,7 +116,7 @@ begin
   end;
 end;
 
-procedure RunWSLWrap(const dstExecName: string = ''; WriteDummy: Boolean = true; WinToNixInput: Boolean = false);
+procedure RunWSLWrap(const dstExecName: string = ''; runWithShell: Boolean = false; WriteDummy: Boolean = true; WinToNixInput: Boolean = false);
 var
   p : TProcess;
   i : integer;
@@ -129,7 +134,8 @@ begin
   try
     p.Executable := 'wsl';
     //p.Executable := 'C:\lazarus\fpc\3.0.4\bin\x86_64-win64\fpc.exe';
-    p.Parameters.add('-e');
+    if not runWithShell then p.Parameters.add('-e');
+
     if dstExecName<>'' then
       p.Parameters.add(dstExecName);
     for i:=1 to ParamCount do
@@ -167,8 +173,10 @@ begin
           SetLength(s, sz);
           sz := inp.Read(s[1], sz);
           SetLength(s, sz);
-          if WinToNixInput then
+          if WinToNixInput then begin
             s:=WinPathToUnixPath(s);
+            s:=WinLFtoNixLF(s);
+          end;
           p.Input.Write(s[1], length(s));
         end else if WriteDummy then begin
           s:=#0;
@@ -190,6 +198,7 @@ type
   TWSLWrap = record
     cmd     : string;
     linkres : Boolean;
+    shell : Boolean;
     inp_dummy   : Boolean;
     inp_wintonix : Boolean;
   end;
@@ -207,6 +216,7 @@ begin
       info.linkres := st.Values['linkres']<>'';
       info.inp_dummy := st.Values['inp.dummy']<>'0';
       info.inp_wintonix := st.Values['inp.wintonix']='1';
+      info.shell := st.Values['shell']='1';
       Result := true;
       //if st.Count>0 then Result := st[0]
       //else Result := '';
@@ -265,6 +275,6 @@ begin
 
   //for i:=1 to ParamCount do writeln(i,': ', Paramstr(i));
 
-  RunWSLWrap(cmd, info.inp_dummy, info.inp_wintonix);
+  RunWSLWrap(cmd, info.shell, info.inp_dummy, info.inp_wintonix);
 end.
 
