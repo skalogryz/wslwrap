@@ -180,7 +180,7 @@ begin
           p.Input.Write(s[1], length(s));
         end else if WriteDummy then begin
           s:=#0;
-          p.Input.Write(s[1], 0);
+          p.Input.Write(s[1], length(s));
         end;
       end;
 
