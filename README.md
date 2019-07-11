@@ -79,3 +79,15 @@ Creating your own ls.exe. Compile wslwrap.exe, rename it to ls.exe. Create ls.wr
     exe=ls
    
 That's it. Now you can run your ls.exe (with any additional parameters desired)   
+
+### .wrp file parameters
+
+* exe - (string) specifies the executable file name (can be a full path) that needs to be executed. If not specified, the executable name is either determined from name (right after the first underscore) or would be read for the first command-line parameter.
+
+* linkres - (1/0, default 0) - the flag indicates that link.res files needs to have Win to Unix paths replaced prior to the execution. (if file doesn't exist, contintues to the execution)
+
+* inp.dummy - (1/0, default 1) - the flag indicates, if the input stream of the child needs to be fed with #0 characters (if no other input is provided). Without the feed, an applications typically stall waithing for the input. (wsl pipe bug?)
+
+* inp.wintonix = (1/0, default 0), any input provided (through file or pipe) is searched for Windows absolute paths and replaced with corresponding WSL paths ( /mnt/x/... )
+
+* shell = (1/0, default 0), the command should be executed via WSL shell. If not, then it's executed as a direct command (see WSL.exe -e parameter)        
